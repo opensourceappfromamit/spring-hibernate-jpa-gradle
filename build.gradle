@@ -1,0 +1,99 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'war'
+apply plugin: 'jetty'
+
+// JDK 8
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+ext.springVersion='4.1.6.RELEASE'
+ext.hibernateVersion='4.3.11.Final'
+ext.hibernateValidatorVersion='4.3.0.Final'
+
+repositories {
+    mavenCentral()
+}
+
+def prodProfiles='prod'
+def devProfiles='dev'
+def testProfiles='test'
+def propertyDrivenProfiles;
+
+
+if (project.hasProperty('prod')) {
+	// Used for production environment
+	propertyDrivenProfiles = prodProfiles
+	apply from: rootProject.file('profile_prod.gradle');
+
+} else if (project.hasProperty('dev')) {
+	// Used for local development
+	propertyDrivenProfiles = devProfiles
+	apply from: rootProject.file('profile_dev.gradle');
+
+} else {
+	// Default when no profile property is specified, used for testing
+	propertyDrivenProfiles = devProfiles
+	apply from: rootProject.file('profile_dev.gradle');
+}
+println 'Using profile: "' + propertyDrivenProfiles + '" for ' + project.getName()
+
+war {
+	archiveName 'seedproject.war'
+}
+
+sourceSets {
+	main {
+		resources {
+			srcDir "src/main/resources/$propertyDrivenProfiles/"
+		}
+	}
+}
+
+
+dependencies {
+	compile 'ch.qos.logback:logback-classic:1.1.3'
+	compile group: 'org.json', name: 'json', version: '20160810'
+
+	providedCompile 'javax.servlet:javax.servlet-api:3.0.1'
+
+	compile "org.springframework:spring-tx:$springVersion"
+	compile "org.springframework:spring-orm:$springVersion"
+	compile "org.springframework:spring-aop:$springVersion"
+	compile "org.springframework:spring-webmvc:$springVersion"
+	compile "org.springframework:spring-oxm:$springVersion"
+	compile group: 'org.springframework', name: 'spring-context', version: '$springVersion.RELEASE'
+
+	// annotation support
+	compile 'cglib:cglib-nodep:2.2.2'
+	compile 'org.aspectj:aspectjrt:1.6.12'
+	compile 'org.aspectj:aspectjweaver:1.6.12'
+
+	// hibernate
+	compile "org.hibernate:hibernate-core:$hibernateVersion"
+	compile "org.hibernate:hibernate-entitymanager:$hibernateVersion"
+	compile group: 'org.hibernate', name: 'hibernate-ehcache', version: '4.3.7.Final'
+	compile group: 'org.hibernate.javax.persistence', name: 'hibernate-jpa-2.1-api', version: '1.0.0.Final'
+	compile group: 'c3p0', name: 'c3p0', version: '0.9.0.4'
+
+	// Mysql
+	compile 'mysql:mysql-connector-java:5.1.16'
+	// https://mvnrepository.com/artifact/junit/junit
+	compile group: 'junit', name: 'junit', version: '4.4'
+	// https://mvnrepository.com/artifact/org.springframework/spring-test
+	compile group: 'org.springframework', name: 'spring-test', version: '2.5'
+
+
+}
+
+// Embeded Jetty for testing
+jettyRun{
+	contextPath = "seedproject"
+	httpPort = 8070
+}
+
+jettyRunWar{
+	contextPath = "seedproject"
+	httpPort = 8070
+}
+
